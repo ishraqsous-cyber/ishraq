@@ -1,0 +1,498 @@
+اشراق محمد صالح صوص 
+202410972
+(A)
+
+#ملاحظة: فرع ثاني تم حل تحت الاول
+ #   HW 1 - Linear Algebra Console Program (Basic Python)
+#   WITHOUT OOP — WITHOUT LIBRARIES — ONLY BASICS
+# ===================================================
+
+# -------------------------
+# Read and Print matrices
+# -------------------------
+def read_matrix():
+    r = int(input("Enter number of rows: "))
+    c = int(input("Enter number of columns: "))
+    m = []
+    print("Enter matrix row by row:")
+    for i in range(r):
+        row = list(map(float, input().split()))
+        m.append(row)
+    return m
+
+def print_matrix(m):
+    for row in m:
+        print(row)
+
+# -------------------------
+# 1 — REF
+# -------------------------
+def REF(matrix):
+    m = [row[:] for row in matrix]
+    rows = len(m)
+    cols = len(m[0])
+    pivot_row = 0
+
+    for col in range(cols):
+        pivot = None
+        for r in range(pivot_row, rows):
+            if m[r][col] != 0:
+                pivot = r
+                break
+        if pivot is None:
+            continue
+
+        m[pivot_row], m[pivot] = m[pivot], m[pivot_row]
+
+        pivot_val = m[pivot_row][col]
+        for j in range(cols):
+            m[pivot_row][j] /= pivot_val
+
+        for r in range(pivot_row + 1, rows):
+            factor = m[r][col]
+            for j in range(cols):
+                m[r][j] -= factor * m[pivot_row][j]
+
+        pivot_row += 1
+
+    return m
+
+# -------------------------
+# 2 — RREF
+# -------------------------
+def RREF(matrix):
+    m = REF(matrix)
+    rows = len(m)
+    cols = len(m[0])
+
+    for i in range(rows - 1, -1, -1):
+        pivot_col = None
+        for j in range(cols):
+            if abs(m[i][j]) == 1:
+                pivot_col = j
+                break
+        if pivot_col is None:
+            continue
+
+        for r in range(i):
+            factor = m[r][pivot_col]
+            for c in range(cols):
+                m[r][c] -= factor * m[i][c]
+
+    return m
+
+# -------------------------
+# Matrix operations
+# -------------------------
+def add(A, B):
+    r = len(A)
+    c = len(A[0])
+    result = []
+    for i in range(r):
+        row = []
+        for j in range(c):
+            row.append(A[i][j] + B[i][j])
+        result.append(row)
+    return result
+
+def sub(A, B):
+    r = len(A)
+    c = len(A[0])
+    result = []
+    for i in range(r):
+        row = []
+        for j in range(c):
+            row.append(A[i][j] - B[i][j])
+        result.append(row)
+    return result
+
+def scalar_mult(A, k):
+    return [[k * x for x in row] for row in A]
+
+def mat_mult(A, B):
+    r1, c1 = len(A), len(A[0])
+    r2, c2 = len(B), len(B[0])
+    result = []
+    for i in range(r1):
+        row = []
+        for j in range(c2):
+            s = 0
+            for k in range(c1):
+                s += A[i][k] * B[k][j]
+            row.append(s)
+        result.append(row)
+    return result
+
+# -------------------------
+# Determinant
+# -------------------------
+def det(M):
+    if len(M) == 1:
+        return M[0][0]
+    if len(M) == 2:
+        return M[0][0]*M[1][1] - M[0][1]*M[1][0]
+
+    s = 0
+    for col in range(len(M)):
+        sub = [row[:col] + row[col+1:] for row in M[1:]]
+        s += ((-1)**col) * M[0][col] * det(sub)
+    return s
+
+# -------------------------
+# 6 — Linear Independence
+# -------------------------
+def is_independent(vectors):
+    matrix = [v[:] for v in vectors]
+    rref = RREF(matrix)
+
+    pivots = 0
+    for row in rref:
+        if 1 in row:
+            pivots += 1
+
+    return pivots == len(vectors)
+
+# -------------------------
+# 7 — Basis, Dimension, Row Space, Column Space
+# -------------------------
+def row_space_basis(matrix):
+    r = RREF(matrix)
+    basis = []
+    for row in r:
+        if any(abs(x) > 1e-9 for x in row):
+            basis.append(row)
+    return basis
+
+def column_space_basis(matrix):
+    r = RREF(matrix)
+    rows = len(r)
+    cols = len(r[0])
+    pivot_cols = []
+
+    for j in range(cols):
+        for i in range(rows):
+            if abs(r[i][j]) == 1:
+                pivot_cols.append(j)
+                break
+
+    basis = []
+    for c in pivot_cols:
+        col = [matrix[i][c] for i in range(len(matrix))]
+        basis.append(col)
+
+    return basis
+
+def basis_and_dimension(vectors):
+    matrix = [v[:] for v in vectors]
+    rref = RREF(matrix)
+    basis = []
+    for row in rref:
+        if any(abs(x) > 1e-9 for x in row):
+            basis.append(row)
+    dimension = len(basis)
+    return basis, dimension
+
+# -------------------------
+# 8 — Eigenvalues & Eigenvectors (2×2)
+# -------------------------
+def eigenvalues_2x2(A):
+    a, b = A[0][0], A[0][1]
+    c, d = A[1][0], A[1][1]
+    trace = a + d
+    determinant = a*d - b*c
+    disc = trace**2 - 4*determinant
+    if disc < 0:
+        return None
+    l1 = (trace + disc**0.5)/2
+    l2 = (trace - disc**0.5)/2
+    return [l1, l2]
+
+def eigenvector_2x2(A, lam):
+    a = A[0][0] - lam
+    b = A[0][1]
+    c = A[1][0]
+    d = A[1][1] - lam
+
+    if abs(b) > 1e-9:
+        return [1, -a/b]
+    elif abs(c) > 1e-9:
+        return [-d/c, 1]
+    else:
+        return [1, 0]
+
+# -------------------------
+# 9 — Diagonalization (2×2)
+# -------------------------
+def is_diagonalizable(A):
+    eigs = eigenvalues_2x2(A)
+    if eigs is None:
+        return False
+    vecs = []
+    for lam in eigs:
+        vecs.append(eigenvector_2x2(A, lam))
+    return is_independent(vecs)
+
+# ===================================================
+# MAIN MENU
+# ===================================================
+while True:
+    print("\n========== MENU ==========")
+    print("1) REF")
+    print("2) RREF")
+    print("3) Matrix Addition")
+    print("4) Matrix Subtraction")
+    print("5) Scalar Multiply")
+    print("6) Matrix Multiplication")
+    print("7) Determinant")
+    print("8) Linear Independence Check")
+    print("9) Basis & Dimension")
+    print("10) Row Space & Column Space")
+    print("11) Eigenvalues/Eigenvectors (2x2)")
+    print("12) Diagonalization (2x2)")
+    print("0) Exit")
+
+    choice = input("Enter choice: ")
+
+    if choice == "0":
+        break
+
+    if choice in ["1", "2", "3", "4", "5", "6", "7", "10", "11", "12"]:
+        print("\nEnter Matrix A:")
+        A = read_matrix()
+
+    if choice == "1":
+        print_matrix(REF(A))
+
+    elif choice == "2":
+        print_matrix(RREF(A))
+
+    elif choice == "3":
+        print("\nEnter Matrix B:")
+        B = read_matrix()
+        print_matrix(add(A, B))
+
+    elif choice == "4":
+        print("\nEnter Matrix B:")
+        B = read_matrix()
+        print_matrix(sub(A, B))
+
+    elif choice == "5":
+        k = float(input("Enter scalar: "))
+        print_matrix(scalar_mult(A, k))
+
+    elif choice == "6":
+        print("\nEnter Matrix B:")
+        B = read_matrix()
+        print_matrix(mat_mult(A, B))
+
+    elif choice == "7":
+        print(det(A))
+
+    elif choice == "8":
+        n = int(input("How many vectors? "))
+        vectors = []
+        for i in range(n):
+            vec = list(map(float, input().split()))
+            vectors.append(vec)
+        print("Independent?", is_independent(vectors))
+
+    elif choice == "9":
+        n = int(input("How many vectors? "))
+        vecs = []
+        for i in range(n):
+            vec = list(map(float, input().split()))
+            vecs.append(vec)
+        b, d = basis_and_dimension(vecs)
+        print("Basis:")
+        print_matrix(b)
+        print("Dimension:", d)
+
+    elif choice == "10":
+        print("Row Space Basis:")
+        print_matrix(row_space_basis(A))
+        print("Column Space Basis:")
+        print_matrix(column_space_basis(A))
+
+    elif choice == "11":
+        vals = eigenvalues_2x2(A)
+        print("Eigenvalues:", vals)
+        for lam in vals:
+            print("Eigenvector for", lam, ":", eigenvector_2x2(A, lam))
+
+    elif choice == "12":
+        print("Diagonalizable?", is_diagonalizable(A))
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+(B)
+
+#  Part B — Differential Equations Solver (Google Colab Version)
+# ======================================================
+
+# ---------- Linear first-order: y' + p y = q ----------
+def solve_first_order_linear():
+    print("\n--- First-order linear ODE:  y' + p*y = q ---")
+    p = float(input("Enter p: "))
+    q = float(input("Enter q: "))
+
+    if p == 0:
+        print("y' = q  →  y = {}x + C".format(q))
+    else:
+        print("y = C * e^(-{}x) + {}".format(p, q/p))
+
+
+# ---------- Separable ----------
+def solve_first_order_separable():
+    print("\n--- Separable ODE ---")
+    print("1) dy/dx = k*y")
+    print("2) dy/dx = k*x")
+    ch = input("Choose case: ")
+
+    if ch == "1":
+        k = float(input("Enter k: "))
+        print("Solution: y = C * e^({}x)".format(k))
+
+    elif ch == "2":
+        k = float(input("Enter k: "))
+        print("Solution: y = ({} / 2) x^2 + C".format(k))
+
+    else:
+        print("Invalid choice")
+
+
+# ---------- Second order homogeneous ----------
+def solve_second_order_homogeneous():
+    print("\n--- Second-order: ay'' + by' + cy = 0 ---")
+    a = float(input("a = "))
+    b = float(input("b = "))
+    c = float(input("c = "))
+
+    D = b*b - 4*a*c
+    print("Discriminant:", D)
+
+    if D > 0:
+        r1 = (-b + D**0.5)/(2*a)
+        r2 = (-b - D**0.5)/(2*a)
+        print("y = C1 e^({}x) + C2 e^({}x)".format(r1, r2))
+
+    elif D == 0:
+        r = -b/(2*a)
+        print("y = (C1 + C2 x) e^({}x)".format(r))
+
+    else:
+        alpha = -b/(2*a)
+        beta = (abs(D)**0.5)/(2*a)
+        print("y = e^({}x)[C1 cos({}x) + C2 sin({}x)]".format(alpha, beta, beta))
+
+
+# ---------- Second order forced ----------
+
+
+def solve_second_order_forced():
+    print("\n--- Second-order Forced: ay''+by'+cy=F(x) ---")
+    a = float(input("a = "))
+    b = float(input("b = "))
+    c = float(input("c = "))
+
+    print("1) Constant k")
+    print("2) e^(mx)")
+    print("3) sin(mx)")
+    print("4) cos(mx)")
+
+    f_choice = input("Choose forcing function type: ")
+
+    D = b*b - 4*a*c
+    r1, r2 = None, None
+    if D >= 0:
+        r1 = (-b + (D**0.5))/(2*a)
+        r2 = (-b - (D**0.5))/(2*a)
+
+    if f_choice == "1":
+        k_val = float(input("Enter k: "))
+        if c == 0:
+            print("Requires c != 0 for simple constant forcing (y_p = A/c).")
+            return
+        A = k_val / c
+        print(f"Particular Solution y_p = {A}")
+
+    elif f_choice == "2":
+        m = float(input("Enter m: "))
+        if abs(m - r1) < 1e-6 or abs(m - r2) < 1e-6:
+             print("Resonance detected! This simple code does not handle resonance cases (y_p = Ax*e^(mx)).")
+             return
+
+        denominator = (a*m**2 + b*m + c)
+        if denominator == 0:
+             print("Error in calculation (denominator is zero).")
+             return
+
+        A = 1 / denominator
+        print(f"Particular Solution y_p = {A} * e^({m}x)")
+
+    elif f_choice in ["3", "4"]:
+        m = float(input("Enter m: "))
+
+
+        R1 = float(f_choice == "4")
+        R2 = float(f_choice == "3")
+
+        denom = (c - a*m*2)**2 + (b*m)*2
+        if denom == 0:
+            print("Resonance detected/denominator zero. Cannot calculate simple solution.")
+            return
+
+        A = ((c - a*m**2) * R1 - (b*m) * R2) / denom
+        B = ((c - a*m**2) * R2 + (b*m) * R1) / denom
+
+        # Clean up very small numbers for cleaner output
+        A = round(A, 5)
+        B = round(B, 5)
+
+        print(f"Particular Solution y_p = {A} * cos({m}x) + {B} * sin({m}x)")
+
+    else:
+        print("Invalid choice")
+
+
+# ======================================================
+#                     MENU
+# ======================================================
+def menu():
+    print("\n======================================")
+    print("Differential Equations Solver")
+    print("======================================")
+    print("1) First-order linear")
+    print("2) First-order separable")
+    print("3) Second-order homogeneous")
+    print("4) Second-order forced")
+    print("0) Exit")
+
+# ======================================================
+#                     MAIN LOOP
+# ======================================================
+def main():
+    while True:
+        menu()
+        ch = input("Choose: ")
+
+        if ch == "0":
+            print("Exiting...")
+            break
+        elif ch == "1":
+            solve_first_order_linear()
+        elif ch == "2":
+            solve_first_order_separable()
+        elif ch == "3":
+            solve_second_order_homogeneous()
+        elif ch == "4":
+            solve_second_order_forced()
+        else:
+            print("Invalid option")
+
+# ======================================================
+#        This is IMPORTANT for Google Colab
+# ======================================================
+main()
+
